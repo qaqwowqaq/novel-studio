@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>长卷 · 抽屉方案对比</title>
+<style>
+  :root {
+    --bg: #f5f3ee;
+    --paper: #faf8f3;
+    --ink: #1f1d1a;
+    --ink-2: #4a4640;
+    --ink-3: #8a857c;
+    --line: #e6e1d7;
+    --line-2: #efeadf;
+    --accent: #2f6b5b;
+    --accent-soft: #e4ede9;
+    --danger: #b85c4a;
+    --radius: 10px;
+    --shadow: 0 18px 40px rgba(40, 30, 20, .12), 0 2px 6px rgba(40, 30, 20, .05);
+    --font: -apple-system, "PingFang SC", "Microsoft Yahei", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--font);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    display: flex; flex-direction: column;
+  }
+
+  /* 顶部切换条 */
+  .topbar {
+    flex: 0 0 auto;
+    padding: 14px 24px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .topbar h1 {
+    margin: 0; font-size: 15px; font-weight: 600;
+    letter-spacing: .5px; color: var(--ink-2);
+  }
+  .topbar .hint { color: var(--ink-3); font-size: 12px; }
+  .tabs { margin-left: auto; display: flex; gap: 4px; }
+  .tab {
+    padding: 7px 14px;
+    background: transparent; border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 13px; color: var(--ink-3);
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .tab:hover { color: var(--ink-2); }
+  .tab.active {
+    background: var(--ink); color: #fff;
+  }
+
+  /* 舞台：模拟写作态背景 + 左侧抽屉 */
+  .stage {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 0;
+  }
+  .drawer-host {
+    background: #fff;
+    border-right: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .canvas {
+    padding: 48px 8vw;
+    overflow: auto;
+    background:
+      radial-gradient(circle at 30% 10%, rgba(255,255,255,.8), transparent 40%),
+      var(--bg);
+  }
+  .canvas .paper {
+    max-width: 620px; margin: 0 auto;
+    background: var(--paper);
+    border-radius: 6px;
+    padding: 64px 72px;
+    box-shadow: 0 2px 24px rgba(40,30,20,.06);
+    color: var(--ink-2);
+    line-height: 1.9;
+    font-size: 15px;
+  }
+  .canvas h2 {
+    font-size: 20px; letter-spacing: 2px;
+    color: var(--ink); margin: 0 0 24px;
+    font-weight: 600;
+  }
+  .canvas p { margin: 0 0 18px; }
+  .canvas .ghost { color: var(--ink-3); }
+
+  /* 注解条 */
+  .annotation {
+    position: sticky; top: 0;
+    padding: 12px 20px;
+    background: var(--accent-soft);
+    border-bottom: 1px solid #d6e2dc;
+    font-size: 12.5px;
+    color: var(--accent);
+    line-height: 1.6;
+  }
+  .annotation b { color: #1f4a3f; }
+
+  /* 通用抽屉骨架 */
+  .drawer {
+    height: 100%;
+    display: flex; flex-direction: column;
+  }
+  .d-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .d-head .title {
+    font-size: 16px; font-weight: 600;
+    letter-spacing: .5px;
+  }
+  .d-head .close {
+    margin-left: auto;
+    width: 26px; height: 26px;
+    display: grid; place-items: center;
+    color: var(--ink-3); cursor: pointer;
+    border-radius: 6px;
+  }
+  .d-head .close:hover { background: var(--line-2); color: var(--ink); }
+  .d-body {
+    flex: 1; min-height: 0; overflow: auto;
+  }
+  .d-foot {
+    flex: 0 0 auto;
+    border-top: 1px solid var(--line-2);
+    padding: 10px 14px;
+    display: flex; gap: 8px; align-items: center;
+    color: var(--ink-3); font-size: 12.5px;
+  }
+  .d-foot .tool {
+    padding: 6px 10px; border-radius: 6px;
+    cursor: pointer;
+  }
+  .d-foot .tool:hover { background: var(--line-2); color: var(--ink-2); }
+
+  /* 章节项通用 */
+  .item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--ink-2);
+  }
+  .item:hover { background: var(--line-2); }
+  .item.active {
+    background: var(--accent-soft);
+    color: #1f4a3f;
+  }
+  .item .num {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-3); font-size: 12px;
+    min-width: 36px;
+  }
+  .item.active .num { color: var(--accent); }
+  .item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .meta { flex: 0 0 auto; color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  /* 方案A：面包屑 + 单层列表 */
+  .a-crumb {
+    padding: 10px 14px 6px;
+    display: flex; align-items: center; gap: 6px;
+    color: var(--ink-3); font-size: 12.5px;
+  }
+  .a-crumb .book { color: var(--ink-2); }
+  .a-volume {
+    margin: 0 14px 10px;
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--line-2);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .a-volume:hover { background: #e6e0d3; }
+  .a-volume .vname { font-weight: 600; color: var(--ink); }
+  .a-volume .vmeta { margin-left: auto; color: var(--ink-3); font-size: 12px; }
+  .a-volume .chev { color: var(--ink-3); }
+  .a-list { padding: 4px 10px 8px; }
+  .a-addbar {
+    padding: 6px 14px 14px;
+  }
+  .a-addbar .addbtn {
+    width: 100%;
+    padding: 9px 12px;
+    background: transparent;
+    border: 1px dashed var(--line);
+    color: var(--ink-3);
+    border-radius: 8px;
+    font: inherit; cursor: pointer;
+  }
+  .a-addbar .addbtn:hover { color: var(--ink-2); border-color: var(--ink-3); }
+  .a-addbar .inputrow {
+    display: flex; gap: 6px;
+  }
+  .a-addbar input {
+    flex: 1; padding: 9px 12px;
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 8px; font: inherit;
+    outline: none;
+  }
+  .a-addbar input:focus { border-color: var(--accent); }
+  .a-addbar .ok {
+    padding: 9px 14px; border: none;
+    background: var(--ink); color: #fff;
+    border-radius: 8px; font: inherit; cursor: pointer;
+  }
+
+  /* 卷切换面板 */
+  .a-vol-picker {
+    position: absolute; left: 14px; right: 14px; top: 82px;
+    background: #fff;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    border-radius: 10px;
+    padding: 6px;
+    z-index: 5;
+    display: none;
+  }
+  .a-vol-picker.open { display: block; }
+  .a-vol-picker .vp-item {
+    padding: 10px 12px;
+    border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .a-vol-picker .vp-item:hover { background: var(--line-2); }
+  .a-vol-picker .vp-item.active { background: var(--accent-soft); color: #1f4a3f; }
+  .a-vol-picker .vp-item .vp-meta { margin-left: auto; color: var(--ink-3); font-size: 12px; }
+  .a-vol-picker .vp-sep {
+    height: 1px; background: var(--line-2); margin: 4px 6px;
+  }
+  .a-vol-picker .vp-new {
+    padding: 10px 12px; color: var(--accent);
+    cursor: pointer; border-radius: 6px;
+  }
+  .a-vol-picker .vp-new:hover { background: var(--accent-soft); }
+
+  /* 方案B：树形折叠 */
+  .b-book {
+    padding: 8px 14px;
+  }
+  .b-vol-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .b-vol-head:hover { background: var(--line-2); }
+  .b-vol-head .caret {
+    width: 14px; display: inline-block;
+    color: var(--ink-3);
+    transition: transform .15s;
+  }
+  .b-vol-head.collapsed .caret { transform: rotate(-90deg); }
+  .b-vol-head .vmeta { margin-left: auto; color: var(--ink-3); font-weight: 400; font-size: 12px; }
+  .b-vol-body { padding-left: 24px; }
+  .b-vol-body.hidden { display: none; }
+  .b-vol-body .item { padding: 7px 12px; }
+  .b-add {
+    margin: 8px 0 0 24px;
+    padding: 7px 12px;
+    color: var(--ink-3);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .b-add:hover { background: var(--line-2); color: var(--ink-2); }
+  .b-newvol {
+    margin: 8px 14px;
+    padding: 9px 12px;
+    color: var(--ink-3);
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px dashed var(--line);
+    text-align: center;
+    font-size: 13px;
+  }
+  .b-newvol:hover { color: var(--ink-2); border-color: var(--ink-3); }
+
+  /* 方案C：双栏 */
+  .c-wrap {
+    display: grid;
+    grid-template-columns: 128px 1fr;
+    height: 100%;
+  }
+  .c-left {
+    background: #faf8f3;
+    border-right: 1px solid var(--line-2);
+    padding: 10px 8px;
+    overflow: auto;
+  }
+  .c-vol {
+    padding: 10px 10px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.35;
+  }
+  .c-vol:hover { background: var(--line-2); }
+  .c-vol.active {
+    background: var(--ink);
+    color: #fff;
+  }
+  .c-vol .cvn { font-size: 11px; color: var(--ink-3); }
+  .c-vol.active .cvn { color: rgba(255,255,255,.6); }
+  .c-vol .cvt { font-weight: 600; }
+  .c-add-vol {
+    padding: 10px; text-align: center;
+    color: var(--ink-3); font-size: 12px;
+    cursor: pointer; border-radius: 6px;
+    margin-top: 6px;
+  }
+  .c-add-vol:hover { background: var(--line-2); color: var(--ink-2); }
+  .c-right {
+    overflow: auto;
+    display: flex; flex-direction: column;
+  }
+  .c-right .vtitle {
+    padding: 14px 16px 8px;
+    font-size: 13px; color: var(--ink-3);
+    letter-spacing: .5px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .c-right .list { padding: 8px 10px; flex: 1; }
+  .c-right .addbtn {
+    margin: 6px 14px 14px;
+    padding: 9px 12px;
+    background: transparent;
+    border: 1px dashed var(--line);
+    color: var(--ink-3);
+    border-radius: 8px;
+    font: inherit; cursor: pointer;
+  }
+  .c-right .addbtn:hover { color: var(--ink-2); border-color: var(--ink-3); }
+
+  /* 通用次级入口 */
+  .secondary-rail {
+    display: flex; gap: 6px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--line-2);
+  }
+  .secondary-rail .chip {
+    padding: 6px 10px;
+    background: var(--line-2);
+    border-radius: 999px;
+    color: var(--ink-2);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .secondary-rail .chip:hover { background: #e0dacb; }
+
+  .only { display: none; }
+  .only.show { display: block; }
+  .only.show.flex { display: flex; }
+  .only.show.grid { display: grid; }
+
+  /* 模式说明（舞台右侧 canvas 上方的漂浮说明） */
+  .tag-row {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .tag-row .tag {
+    font-size: 11.5px;
+    color: var(--ink-3);
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .tag-row .tag.good { color: #1f4a3f; border-color: #c9dcd4; background: var(--accent-soft); }
+  .tag-row .tag.bad { color: #8a3a2c; border-color: #e8cfc7; background: #f8e8e3; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>长卷 · 抽屉方案</h1>
+    <span class="hint">用同一份数据（雾港纪事 · 2卷 · 5章）体验三种结构</span>
+    <div class="tabs">
+      <button class="tab active" data-tab="A">A · 面包屑单层</button>
+      <button class="tab" data-tab="B">B · 树形折叠</button>
+      <button class="tab" data-tab="C">C · 双栏</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="drawer-host">
+
+      <!-- ============== 方案 A ============== -->
+      <div class="drawer only show" id="drawer-A">
+        <div class="d-head">
+          <div class="title">雾港纪事</div>
+          <div class="close">×</div>
+        </div>
+
+        <div class="a-crumb">
+          <span class="book">雾港纪事</span>
+          <span>›</span>
+          <span class="vpicker" id="a-vpicker-trigger" style="cursor:pointer; color:var(--ink-2);">
+            第一卷 · 雾起 ▾
+          </span>
+        </div>
+
+        <div class="a-vol-picker" id="a-vol-picker">
+          <div class="vp-item active">
+            <span>第一卷 · 雾起</span>
+            <span class="vp-meta">3 章 · 8.2k 字</span>
+          </div>
+          <div class="vp-item">
+            <span>第二卷 · 暗涌</span>
+            <span class="vp-meta">2 章 · 3.1k 字</span>
+          </div>
+          <div class="vp-sep"></div>
+          <div class="vp-new">＋ 新建卷</div>
+        </div>
+
+        <div class="a-list" id="a-list">
+          <div class="item active">
+            <span class="num">01</span>
+            <span class="name">雾港来信</span>
+            <span class="meta">3,214 字</span>
+          </div>
+          <div class="item">
+            <span class="num">02</span>
+            <span class="name">灯塔守人的笔记</span>
+            <span class="meta">2,890 字</span>
+          </div>
+          <div class="item">
+            <span class="num">03</span>
+            <span class="name">第三个脚印</span>
+            <span class="meta">2,104 字</span>
+          </div>
+        </div>
+
+        <div class="a-addbar" id="a-addbar">
+          <button class="addbtn" id="a-add-btn">＋ 新章节</button>
+          <div class="inputrow" style="display:none;" id="a-add-input">
+            <input placeholder="章节名（回车添加）" />
+            <button class="ok">添加</button>
+          </div>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <div class="secondary-rail">
+          <span class="chip">快照 3</span>
+          <span class="chip">其他作品 1</span>
+          <span class="chip" style="margin-left:auto;">书本设置</span>
+        </div>
+      </div>
+
+      <!-- ============== 方案 B ============== -->
+      <div class="drawer only" id="drawer-B">
+        <div class="d-head">
+          <div class="title">雾港纪事</div>
+          <div class="close">×</div>
+        </div>
+        <div class="d-body">
+          <div class="b-book">
+            <div class="b-vol-head" data-bvol="1">
+              <span class="caret">▾</span>
+              <span>第一卷 · 雾起</span>
+              <span class="vmeta">3 章</span>
+            </div>
+            <div class="b-vol-body" id="b-body-1">
+              <div class="item active">
+                <span class="num">01</span><span class="name">雾港来信</span><span class="meta">3,214</span>
+              </div>
+              <div class="item">
+                <span class="num">02</span><span class="name">灯塔守人的笔记</span><span class="meta">2,890</span>
+              </div>
+              <div class="item">
+                <span class="num">03</span><span class="name">第三个脚印</span><span class="meta">2,104</span>
+              </div>
+              <div class="b-add">＋ 新章节</div>
+            </div>
+
+            <div class="b-vol-head collapsed" data-bvol="2" style="margin-top:6px;">
+              <span class="caret">▾</span>
+              <span>第二卷 · 暗涌</span>
+              <span class="vmeta">2 章</span>
+            </div>
+            <div class="b-vol-body hidden" id="b-body-2">
+              <div class="item">
+                <span class="num">04</span><span class="name">雨夜的信使</span><span class="meta">1,620</span>
+              </div>
+              <div class="item">
+                <span class="num">05</span><span class="name">锁住的房间</span><span class="meta">1,480</span>
+              </div>
+              <div class="b-add">＋ 新章节</div>
+            </div>
+          </div>
+          <div class="b-newvol">＋ 新建卷</div>
+        </div>
+        <div class="secondary-rail">
+          <span class="chip">快照 3</span>
+          <span class="chip">其他作品 1</span>
+          <span class="chip" style="margin-left:auto;">书本设置</span>
+        </div>
+      </div>
+
+      <!-- ============== 方案 C ============== -->
+      <div class="drawer only" id="drawer-C">
+        <div class="d-head">
+          <div class="title">雾港纪事</div>
+          <div class="close">×</div>
+        </div>
+        <div class="c-wrap">
+          <div class="c-left">
+            <div class="c-vol active" data-cvol="1">
+              <div class="cvn">卷 一</div>
+              <div class="cvt">雾起</div>
+              <div class="cvn" style="margin-top:2px;">3 章</div>
+            </div>
+            <div class="c-vol" data-cvol="2">
+              <div class="cvn">卷 二</div>
+              <div class="cvt">暗涌</div>
+              <div class="cvn" style="margin-top:2px;">2 章</div>
+            </div>
+            <div class="c-add-vol">＋ 新卷</div>
+          </div>
+          <div class="c-right">
+            <div class="vtitle" id="c-vtitle">第一卷 · 雾起</div>
+            <div class="list" id="c-list">
+              <div class="item active"><span class="num">01</span><span class="name">雾港来信</span><span class="meta">3,214</span></div>
+              <div class="item"><span class="num">02</span><span class="name">灯塔守人的笔记</span><span class="meta">2,890</span></div>
+              <div class="item"><span class="num">03</span><span class="name">第三个脚印</span><span class="meta">2,104</span></div>
+            </div>
+            <button class="addbtn">＋ 新章节</button>
+          </div>
+        </div>
+        <div class="secondary-rail">
+          <span class="chip">快照 3</span>
+          <span class="chip">其他作品 1</span>
+          <span class="chip" style="margin-left:auto;">书本设置</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="canvas">
+      <div class="annotation" id="annotation">
+        <b>方案 A · 面包屑单层列表</b> — 层级隐藏在面包屑里，视觉永远单层。点"第一卷 · 雾起 ▾"可切卷。章节数再多也不会失控。
+        <div class="tag-row">
+          <span class="tag good">视觉密度低</span>
+          <span class="tag good">章节多也稳</span>
+          <span class="tag">切卷多一步</span>
+        </div>
+      </div>
+      <div class="paper">
+        <h2>第 一 章 · 雾 港 来 信</h2>
+        <p>雾从海面上漫起来的时候，林青正站在灯塔下。他手里捏着那封信，信封的边缘被海风掀得轻轻颤抖，墨迹在潮气里微微晕开。</p>
+        <p>"先生，您真的要上去吗？"守塔人问他。</p>
+        <p>林青没有回答。他只是把信纸折好，塞回口袋，然后沿着那条湿滑的石阶往上走。</p>
+        <p class="ghost">（这是示意正文，用来体现抽屉和写作区的关系。）</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const notes = {
+    A: {
+      title: '方案 A · 面包屑单层列表',
+      body: '层级隐藏在面包屑里，视觉永远单层。点"第一卷 · 雾起 ▾"可切卷。章节数再多也不会失控。',
+      tags: [['good','视觉密度低'],['good','章节多也稳'],['','切卷多一步']]
+    },
+    B: {
+      title: '方案 B · 树形折叠（Scrivener 式）',
+      body: '书 › 卷 › 章节 三级缩进可折叠。结构一眼看全，但卷一多就密。适合重度结构管理型作者。',
+      tags: [['good','结构一眼看全'],['bad','视觉密度最高'],['','卷多时容易杂乱']]
+    },
+    C: {
+      title: '方案 C · 双栏',
+      body: '左侧窄栏列卷，右侧列当前卷的章节。切卷零成本，但占宽度。',
+      tags: [['good','切卷零成本'],['good','结构清晰'],['bad','占空间'],['','卷多时左栏要滚']]
+    }
+  };
+
+  const tabs = document.querySelectorAll('.tab');
+  const drawers = { A: document.getElementById('drawer-A'), B: document.getElementById('drawer-B'), C: document.getElementById('drawer-C') };
+  const annot = document.getElementById('annotation');
+
+  function renderNote(k) {
+    const n = notes[k];
+    annot.innerHTML = `<b>${n.title}</b> — ${n.body}<div class="tag-row">${
+      n.tags.map(([c,t])=>`<span class="tag ${c}">${t}</span>`).join('')
+    }</div>`;
+  }
+
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    const k = t.dataset.tab;
+    Object.entries(drawers).forEach(([key, el]) => el.classList.toggle('show', key === k));
+    renderNote(k);
+  }));
+
+  // A: 卷选择器弹出
+  const trigger = document.getElementById('a-vpicker-trigger');
+  const picker = document.getElementById('a-vol-picker');
+  trigger.addEventListener('click', (e) => { e.stopPropagation(); picker.classList.toggle('open'); });
+  document.addEventListener('click', () => picker.classList.remove('open'));
+
+  // A: 新章节按钮 → 输入框
+  const aAddBtn = document.getElementById('a-add-btn');
+  const aAddInput = document.getElementById('a-add-input');
+  aAddBtn.addEventListener('click', () => {
+    aAddBtn.style.display = 'none';
+    aAddInput.style.display = 'flex';
+    aAddInput.querySelector('input').focus();
+  });
+  aAddInput.querySelector('input').addEventListener('blur', () => {
+    if (!aAddInput.querySelector('input').value) {
+      aAddInput.style.display = 'none';
+      aAddBtn.style.display = 'block';
+    }
+  });
+
+  // B: 卷折叠
+  document.querySelectorAll('.b-vol-head').forEach(h => {
+    h.addEventListener('click', () => {
+      const id = h.dataset.bvol;
+      const body = document.getElementById('b-body-' + id);
+      h.classList.toggle('collapsed');
+      body.classList.toggle('hidden');
+    });
+  });
+
+  // C: 切卷
+  const cData = {
+    1: { title: '第一卷 · 雾起', items: [
+      ['01','雾港来信','3,214', true],
+      ['02','灯塔守人的笔记','2,890', false],
+      ['03','第三个脚印','2,104', false],
+    ]},
+    2: { title: '第二卷 · 暗涌', items: [
+      ['04','雨夜的信使','1,620', false],
+      ['05','锁住的房间','1,480', false],
+    ]}
+  };
+  document.querySelectorAll('.c-vol').forEach(v => {
+    v.addEventListener('click', () => {
+      document.querySelectorAll('.c-vol').forEach(x => x.classList.remove('active'));
+      v.classList.add('active');
+      const d = cData[v.dataset.cvol];
+      document.getElementById('c-vtitle').textContent = d.title;
+      document.getElementById('c-list').innerHTML = d.items.map(([n,name,m,a]) =>
+        `<div class="item ${a?'active':''}"><span class="num">${n}</span><span class="name">${name}</span><span class="meta">${m}</span></div>`
+      ).join('');
+    });
+  });
+
+  renderNote('A');
+</script>
+</body>
+</html>
