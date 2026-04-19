@@ -13,8 +13,14 @@ export type AssetResolver = (id: string) => string | undefined;
 const IMG_RE = /!\[([^\]]*)\]\(asset:([a-zA-Z0-9-]+)\)/g;
 
 class AssetImageWidget extends WidgetType {
-  constructor(readonly src: string, readonly alt: string, readonly id: string) {
+  readonly src: string;
+  readonly alt: string;
+  readonly id: string;
+  constructor(src: string, alt: string, id: string) {
     super();
+    this.src = src;
+    this.alt = alt;
+    this.id = id;
   }
   eq(other: AssetImageWidget): boolean {
     return other.src === this.src && other.alt === this.alt && other.id === this.id;
@@ -36,8 +42,10 @@ class AssetImageWidget extends WidgetType {
 }
 
 class MissingWidget extends WidgetType {
-  constructor(readonly id: string) {
+  readonly id: string;
+  constructor(id: string) {
     super();
+    this.id = id;
   }
   eq(other: MissingWidget): boolean {
     return other.id === this.id;
