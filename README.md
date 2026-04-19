@@ -13,6 +13,20 @@
 
 ---
 
+## 界面预览
+
+<p align="center">
+  <img src="docs/screenshots/immersive-editor.png" alt="Novel Studio 沉浸写作主界面" width="980" />
+</p>
+
+<p align="center"><em>沉浸写作态: 把屏幕还给正文,只保留章节标题、正文与轻量状态信息。</em></p>
+
+<p align="center">
+  <img src="docs/screenshots/reading-column.png" alt="Novel Studio 正文排版细节" width="760" />
+</p>
+
+<p align="center"><em>正文排版细节: 窄栏、留白与纸面感配色,服务长时间连续创作。</em></p>
+
 ## 设计哲学
 
 **两种状态,各司其职。**
