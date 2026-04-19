@@ -19,5 +19,12 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Allow `catch {}` as an explicit no-op for best-effort localStorage / JSON parse calls.
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      // Opinionated rule from the newer react-hooks plugin; suspend for now — the existing
+      // useEffect+setState patterns are load-state flags, not cascading renders.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

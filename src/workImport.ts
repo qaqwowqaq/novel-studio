@@ -64,18 +64,18 @@ function countChineseChars(text: string): number {
 
 const CN_NUM_CHARS = '一二三四五六七八九十百千万零〇两';
 const VOLUME_RE = new RegExp(
-  `^[\\s　]*(?:第\\s*([${CN_NUM_CHARS}\\d]+)\\s*[卷部篇]|[卷部篇]\\s*([${CN_NUM_CHARS}\\d]+))(?:\\s*[·:：、.．\\-—]?\\s*(.*))?\\s*$`,
+  `^[\\s\\u3000]*(?:第\\s*([${CN_NUM_CHARS}\\d]+)\\s*[卷部篇]|[卷部篇]\\s*([${CN_NUM_CHARS}\\d]+))(?:\\s*[·:：、.．\\-—]?\\s*(.*))?\\s*$`,
 );
-const CHAPTER_RE = new RegExp(`^[\\s　]*第\\s*([${CN_NUM_CHARS}\\d]+)\\s*[章回节集]\\s*(?:[·:：、.．\\-—]?\\s*)?(.*)$`);
-const PROLOGUE_RE = /^[\s　]*(楔\s*子|引\s*子|序\s*章|序\s*言|前\s*言|尾\s*声|后\s*记|番\s*外(?:\s*篇)?)[\s·:：、.．\-—]?\s*(.*)$/;
-const CHAPTER_EN_RE = /^[\s　]*Chapter\s+([IVXLCDM\d]+)\s*[:.\-—]?\s*(.*)$/i;
+const CHAPTER_RE = new RegExp(`^[\\s\\u3000]*第\\s*([${CN_NUM_CHARS}\\d]+)\\s*[章回节集]\\s*(?:[·:：、.．\\-—]?\\s*)?(.*)$`);
+const PROLOGUE_RE = /^[\s\u3000]*(楔\s*子|引\s*子|序\s*章|序\s*言|前\s*言|尾\s*声|后\s*记|番\s*外(?:\s*篇)?)[\s·:：、.．\-—]?\s*(.*)$/;
+const CHAPTER_EN_RE = /^[\s\u3000]*Chapter\s+([IVXLCDM\d]+)\s*[:.\-—]?\s*(.*)$/i;
 
 // Filters for ad lines in Chinese web-novel dumps (zxcs/zlib/txt epub extractors).
 const AD_LINE_RE = /(^=+\s*$)|(^-{5,}\s*$)|(https?:\/\/)|(www\.)|(精校小说)|(zxcs)|(z-library)|(z-lib)|(1lib)|(请认准)|(www、)|(\.me\/)|(\.com\/)|(\.org\/)|(\.net\/)/i;
 
-const AUTHOR_RE = /^[\s　]*(?:作者|著者|作家|Author)[\s:：]+(.+?)\s*$/i;
-const TITLE_HINT_RE = /^[\s　]*(?:书名|书\s*名|title)[\s:：]+(.+?)\s*$/i;
-const SYNOPSIS_LABEL_RE = /^[\s　]*(?:内容简介|简介|作品简介|故事简介|Synopsis|Description)\s*[:：]?\s*(.*)$/i;
+const AUTHOR_RE = /^[\s\u3000]*(?:作者|著者|作家|Author)[\s:：]+(.+?)\s*$/i;
+const TITLE_HINT_RE = /^[\s\u3000]*(?:书名|书\s*名|title)[\s:：]+(.+?)\s*$/i;
+const SYNOPSIS_LABEL_RE = /^[\s\u3000]*(?:内容简介|简介|作品简介|故事简介|Synopsis|Description)\s*[:：]?\s*(.*)$/i;
 
 function normalizeLines(raw: string): string[] {
   return raw.replace(/\r\n?/g, '\n').split('\n');
@@ -112,7 +112,7 @@ function stripNoise(content: string): string {
   const paragraphs: string[] = [];
   for (const raw of content.split('\n')) {
     if (isAdLine(raw)) continue;
-    // Strip leading full-width spaces (　　) + regular whitespace; trim tail.
+    // Strip leading full-width spaces (U+3000) and regular whitespace; trim tail.
     const trimmed = raw.replace(/^[\s\u3000]+/, '').replace(/\s+$/, '');
     if (!trimmed) continue;
     paragraphs.push(trimmed);
@@ -131,7 +131,7 @@ function extractHeader(lines: string[], firstMarkerLine: number, fallbackTitle: 
   const headerLines = lines.slice(0, firstMarkerLine);
   let title = '';
   let author = '';
-  let synopsisLines: string[] = [];
+  const synopsisLines: string[] = [];
   let inSynopsis = false;
 
   for (let i = 0; i < headerLines.length; i++) {
